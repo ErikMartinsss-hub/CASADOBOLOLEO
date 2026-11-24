@@ -16,6 +16,6 @@ window.SITE = {
   frames: {
     // Duas fotos reais da confeitaria: uma foto por trecho da rolagem.
     desktop: ["images/background01%20.jpg", "images/background02.jpg"],
-    mobile: ["images/background01%20.jpg", "images/background02.jpg"],
+    mobile: ["images/background01-mobile.jpg", "images/background02-mobile.jpg"],
   },
 };
