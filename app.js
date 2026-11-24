@@ -7,7 +7,7 @@
   const cine = document.querySelector(".cine");
   const imagem = cine && cine.querySelector(".cine-imagem");
   if (cine && imagem) {
-    cine.style.setProperty("--altura", celular ? "320vh" : "420vh");
+    cine.style.setProperty("--altura", celular ? "320vh" : "260vh");
 
     const momentos = [...cine.querySelectorAll(".momento")];
     let agendado = false;
@@ -67,7 +67,7 @@
       const agoraCelular = matchMedia("(max-width: 760px)").matches;
       if (agoraCelular !== celular) {
         celular = agoraCelular;
-        cine.style.setProperty("--altura", celular ? "320vh" : "420vh");
+        cine.style.setProperty("--altura", celular ? "320vh" : "260vh");
         carregarSequencia();
       }
       aoRolar();
