@@ -9,31 +9,58 @@
   const canvas = cine && cine.querySelector(".cine-canvas");
   if (cine && canvas && S.frames && S.frames.total) {
     const ctx = canvas.getContext("2d");
-    const total = S.frames.total;
+    // No celular, metade dos quadros basta e o dedo manda na velocidade.
+    const passo = celular ? 2 : 1;
+    const total = Math.ceil(S.frames.total / passo);
     const padrao = celular ? S.frames.mobile : S.frames.desktop;
-    const src = (i) => padrao.replace("{n}", String(i + 1).padStart(4, "0"));
+    const src = (i) => padrao.replace("{n}", String(i * passo + 1).padStart(4, "0"));
     const quadros = new Array(total);
     const momentos = [...cine.querySelectorAll(".momento")];
-    let alvo = 0, atual = 0, desenhado = -1;
+    const naFila = new Set();
+    const fila = [];
+    const limite = celular ? 3 : 6;
+    const raio = celular ? 5 : 10;
+    let alvo = 0, atual = 0, desenhado = -1, ativas = 0, animando = false;
 
-    const carregar = (i) => {
-      if (quadros[i]) return quadros[i];
+    const carregar = (i, depois) => {
+      if (quadros[i]) {
+        if (depois) depois();
+        return quadros[i];
+      }
       const img = new Image();
       img.decoding = "async";
+      img.onload = () => {
+        if (Math.round(atual) === i || desenhado === -1) desenhar(i, true);
+        if (depois) depois();
+      };
+      img.onerror = () => { if (depois) depois(); };
       img.src = src(i);
-      img.onload = () => { if (Math.round(atual) === i || desenhado === -1) desenhar(i, true); };
-      return (quadros[i] = img);
+      quadros[i] = img;
+      return img;
     };
 
-    // Carrega em passadas (1 a cada 8, depois 1 a cada 4…) para cobrir o filme inteiro cedo
-    carregar(0);
-    if (!reduzir) {
-      const fila = [];
-      for (const passo of [8, 4, 2, 1]) for (let i = 0; i < total; i += passo) if (!fila.includes(i)) fila.push(i);
-      let k = 0;
-      const lote = () => { for (let n = 0; n < 6 && k < fila.length; n++) carregar(fila[k++]); if (k < fila.length) setTimeout(lote, 40); };
-      lote();
-    }
+    const bombar = () => {
+      while (ativas < limite && fila.length) {
+        const i = fila.shift();
+        naFila.delete(i);
+        if (quadros[i]) continue;
+        ativas++;
+        carregar(i, () => { ativas--; bombar(); });
+      }
+    };
+
+    // Só busca quadros perto do dedo: nada de baixar o filme inteiro no começo.
+    const agendar = (indice) => {
+      for (let d = 0; d <= raio; d++) {
+        for (const i of [indice - d, indice + d]) {
+          if (i >= 0 && i < total && !naFila.has(i) && !quadros[i]) {
+            naFila.add(i);
+            fila.push(i);
+          }
+        }
+      }
+      bombar();
+    };
 
     const pronto = (i) => quadros[i] && quadros[i].complete && quadros[i].naturalWidth;
     const maisProximo = (i) => {
@@ -77,19 +104,34 @@
       cine.classList.toggle("andou", p > 0.02);
     };
 
-    const quadro = () => {
-      alvo = progresso() * (total - 1);
-      atual += (alvo - atual) * 0.18; // suaviza: sensação de filme, não de slide
+    const animar = () => {
+      atual += (alvo - atual) * 0.18;
       if (Math.abs(alvo - atual) < 0.05) atual = alvo;
       desenhar(Math.round(atual));
       atualizarMomentos(atual / (total - 1));
-      requestAnimationFrame(quadro);
+      if (atual === alvo) animando = false;
+      else requestAnimationFrame(animar);
     };
 
-    addEventListener("resize", ajustar);
+    const atualizar = () => {
+      alvo = progresso() * (total - 1);
+      if (celular) {
+        atual = alvo;
+        desenhar(Math.round(atual));
+        atualizarMomentos(atual / (total - 1));
+      } else if (!animando) {
+        animando = true;
+        requestAnimationFrame(animar);
+      }
+      agendar(Math.round(alvo));
+    };
+
+    carregar(0);
     ajustar();
+    atualizar();
+    addEventListener("scroll", atualizar, { passive: true });
+    addEventListener("resize", () => { ajustar(); atualizar(); });
     if (reduzir) atualizarMomentos(0);
-    else requestAnimationFrame(quadro);
   }
 
   /* ── Parallax leve nas artes ──────────────────────────────────────────── */
