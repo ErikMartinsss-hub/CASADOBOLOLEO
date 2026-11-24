@@ -124,9 +124,9 @@ p { margin: 0 0 1em; color: var(--texto-suave); text-wrap: pretty; }
 .secao-grade { width: 100%; max-width: var(--largura); margin: 0 auto; display: grid; grid-template-columns: minmax(0, 560px) 1fr; }
 .secao-grade--direita { grid-template-columns: 1fr minmax(0, 560px); }
 .secao-grade--direita > .painel { grid-column: 2; }
-.secao--larga { gap: 28px; justify-items: center; }
+.secao--larga { grid-template-columns: minmax(0, 1fr); gap: 28px; justify-items: center; }
 .painel--cabecalho { width: 100%; max-width: var(--largura); }
-.cartoes { width: 100%; max-width: var(--largura); display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+.cartoes { width: 100%; max-width: var(--largura); display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 20px; }
 .cartao h3 { margin-bottom: .4em; }
 .cartao { transition: transform .5s var(--ease), border-color .5s; }
 .cartao:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--acento) 50%, transparent); }

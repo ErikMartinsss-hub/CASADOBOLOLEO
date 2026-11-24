@@ -7,7 +7,7 @@
   const cine = document.querySelector(".cine");
   const imagem = cine && cine.querySelector(".cine-imagem");
   if (cine && imagem) {
-    cine.style.setProperty("--altura", celular ? "320vh" : "260vh");
+    cine.style.setProperty("--altura", "180vh");
 
     const momentos = [...cine.querySelectorAll(".momento")];
     let agendado = false;
@@ -30,17 +30,20 @@
 
     const carregarSequencia = () => {
       const cfg = S.frames || {};
-      const total = Number(cfg.total) || 6;
-      const modelo = (celular ? cfg.mobile : cfg.desktop) || "";
-      quadros = Array.from({ length: total }, (_, i) => {
-        const src = modelo.replace("{n}", String(i + 1).padStart(2, "0"));
+      const modelo = celular ? cfg.mobile : cfg.desktop;
+      const fontes = Array.isArray(modelo)
+        ? modelo.filter(Boolean)
+        : Array.from({ length: Number(cfg.total) || 6 }, (_, i) =>
+            String(modelo || "").replace("{n}", String(i + 1).padStart(2, "0")),
+          );
+      quadros = fontes.map((src) => {
         const quadro = new Image();
         quadro.decoding = "async";
         quadro.src = src;
         return quadro;
       });
       indiceAtual = -1;
-      imagem.src = quadros[0].src;
+      if (quadros.length) imagem.src = quadros[0].src;
     };
 
     const aplicar = () => {
@@ -67,7 +70,7 @@
       const agoraCelular = matchMedia("(max-width: 760px)").matches;
       if (agoraCelular !== celular) {
         celular = agoraCelular;
-        cine.style.setProperty("--altura", celular ? "320vh" : "260vh");
+        cine.style.setProperty("--altura", "180vh");
         carregarSequencia();
       }
       aoRolar();

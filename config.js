@@ -14,8 +14,8 @@ window.SITE = {
   },
 
   frames: {
-    total: 6, // imagens leves do hero
-    desktop: "assets/hero/desktop/h{n}.webp",
-    mobile: "assets/hero/mobile/h{n}.webp",
+    // Duas fotos reais da confeitaria: uma foto por trecho da rolagem.
+    desktop: ["images/background01%20.jpg", "images/background02.jpg"],
+    mobile: ["images/background01%20.jpg", "images/background02.jpg"],
   },
 };
