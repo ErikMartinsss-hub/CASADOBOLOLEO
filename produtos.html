@@ -410,6 +410,7 @@
     }
     .checkout-summary ul { margin: 0 0 10px; padding-left: 18px; color: var(--on-dark-muted); }
     .checkout-summary b { color: var(--honey-bright); font-size: 1rem; }
+    .checkout-mesa { margin: 0 0 8px; color: var(--honey-bright); font-size: .82rem; }
     .type-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
     .type-option {
       position: relative;
@@ -499,6 +500,7 @@
       <nav class="nav" id="menu-principal" aria-label="Navegação">
         <a href="index.html">Início</a>
         <a href="produtos.html">Cardápio</a>
+        <a href="cliente.html">Área do cliente</a>
         <a href="acompanhar.html">Acompanhar pedido</a>
         <a href="pedidos.html">Área da loja</a>
         <a href="index.html#localizacao">Localização</a>
@@ -576,6 +578,7 @@
       var WA_BASE = "https://wa.me/5511962463805";
       var catalog = { categories: [], products: [] };
       var cart = {};
+      var clientMesa = "";
       var activeCategory = "";
       var searchTerm = "";
 
@@ -735,7 +738,9 @@
           return "<li>" + entry.qty + "x " + escapeHtml(entry.product.name) + "</li>";
         }).join("");
         checkoutContent.innerHTML =
-          '<div class="checkout-summary"><ul>' + lines + '</ul>Total: <b>' + formatBRL(total.cents) + '</b></div>' +
+          '<div class="checkout-summary">' +
+            (clientMesa ? '<p class="checkout-mesa">Pedido da mesa <b>' + escapeHtml(clientMesa) + '</b></p>' : '') +
+            '<ul>' + lines + '</ul>Total: <b>' + formatBRL(total.cents) + '</b></div>' +
           '<div class="type-switch">' +
             '<button class="type-option is-active" type="button" data-type="balcao">Retirar no balcão<small>Você busca na loja</small></button>' +
             '<button class="type-option" type="button" data-type="delivery">Delivery<small>Receba pelo motoboy</small></button>' +
@@ -830,7 +835,8 @@
           '<p class="success-note">A loja já recebeu seu pedido. Guarde o número para acompanhar ou retirar no balcão.</p>' +
           '<div class="checkout-summary" style="margin-top:18px">Total: <b>' + formatBRL(data.total_cents) + '</b></div>' +
           '<div class="success-actions">' +
-            '<a class="btn btn-primary" href="acompanhar.html?' + query + '">Acompanhar pedido</a>' +
+            (clientMesa ? '<a class="btn btn-primary" href="cliente.html">Ver minha mesa</a>' : '') +
+            '<a class="btn ' + (clientMesa ? 'btn-outline' : 'btn-primary') + '" href="acompanhar.html?' + query + '">Acompanhar pedido</a>' +
             '<a class="btn btn-outline" href="comanda.html?' + query + '" target="_blank" rel="noopener noreferrer">Ver comanda</a>' +
             '<button class="btn btn-outline" id="success-close" type="button">Voltar ao cardápio</button>' +
           '</div>';
@@ -845,7 +851,8 @@
         var lines = entries.map(function (entry) {
           return entry.qty + "x " + entry.product.name + " — " + formatBRL(toCents(entry.product.price) * entry.qty);
         });
-        var message = "Olá! Quero fazer um pedido na Casa do Bolo do Léo Doce e Mel:\n\n" +
+        var message = "Olá! Quero fazer um pedido na Casa do Bolo do Léo Doce e Mel:" +
+          (clientMesa ? "\nMesa " + clientMesa : "") + "\n\n" +
           lines.join("\n") +
           "\n\nTotal: " + formatBRL(totals().cents) +
           "\n\nGostaria de combinar a retirada no Badra, Suzano.";
@@ -901,6 +908,11 @@
         openCart(false);
         openCheckoutOverlay(false);
       });
+
+      fetch("/api/client/session", { cache: "no-store" })
+        .then(function (response) { return response.json(); })
+        .then(function (data) { if (data.ok) clientMesa = data.mesa || ""; })
+        .catch(function () {});
 
       fetch("/api/catalog", { cache: "no-store" })
         .then(function (response) {

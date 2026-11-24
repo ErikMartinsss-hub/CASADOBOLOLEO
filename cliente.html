@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Área do cliente | Casa do Bolo do Léo Doce e Mel</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%82%3C/text%3E%3C/svg%3E">
+<style>
+  :root { --glass:rgba(30,18,15,.78); --line:rgba(255,245,235,.16); --text:#FFF7EE; --muted:rgba(255,247,238,.74); --honey:#F6B45C; --green:#8fd6a0; --red:#ff9d92; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; color:var(--text); font:15px/1.6 "Plus Jakarta Sans",Arial,sans-serif; background:linear-gradient(160deg,#150d0b,#2b1814); }
+  .wrap { width:min(100% - 32px, 760px); margin-inline:auto; padding:36px 0 70px; }
+  h1 { font:700 clamp(1.8rem,5vw,2.6rem)/1.1 Georgia,serif; margin:8px 0 4px; }
+  h2 { font:700 1.25rem Georgia,serif; margin:0 0 8px; }
+  .eyebrow { color:var(--honey); font-size:.72rem; font-weight:800; letter-spacing:.18em; text-transform:uppercase; }
+  .lead { color:var(--muted); margin:0 0 24px; }
+  .card { padding:24px; border-radius:20px; background:var(--glass); border:1px solid var(--line); }
+  label { display:block; font-size:.78rem; font-weight:700; color:var(--muted); margin:0 0 6px; }
+  input { width:100%; min-height:50px; padding:11px 14px; margin-bottom:14px; border-radius:12px; border:1px solid var(--line); background:rgba(0,0,0,.32); color:var(--text); outline:none; font:inherit; }
+  input:focus { border-color:var(--honey); }
+  button, .btn { display:inline-flex; align-items:center; justify-content:center; min-height:46px; padding:10px 20px; border-radius:999px; border:0; background:var(--honey); color:#2b1a17; font-weight:700; cursor:pointer; text-decoration:none; font-size:.86rem; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .btn.outline { background:transparent; color:var(--text); border:1px solid var(--line); }
+  .error { color:var(--red); min-height:22px; font-size:.84rem; margin-top:6px; }
+  .links { display:flex; gap:8px; flex-wrap:wrap; margin-top:18px; }
+  .links a { min-height:40px; font-size:.8rem; }
+  .bar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:0 0 18px; }
+  .mesa-label { font:700 1.5rem Georgia,serif; color:var(--honey); }
+  .bar-actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .bar-actions button, .bar-actions .btn { min-height:40px; padding:8px 14px; font-size:.78rem; }
+  .order { margin-bottom:14px; padding:20px; border-radius:20px; background:var(--glass); border:1px solid var(--line); }
+  .order-head { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+  .code { font:700 1.6rem Georgia,serif; color:var(--honey); }
+  .when { font-size:.74rem; color:var(--muted); }
+  .badge { display:inline-block; margin:10px 0 4px; padding:6px 14px; border-radius:999px; background:rgba(246,180,92,.16); color:var(--honey); font-weight:800; font-size:.76rem; }
+  .badge.pronto, .badge.pago { background:rgba(143,214,160,.16); color:var(--green); }
+  .badge.a_pagar { background:rgba(246,180,92,.24); }
+  .badge.cancelado { background:rgba(255,157,146,.14); color:var(--red); }
+  .steps { display:grid; gap:8px; margin:16px 0; padding:14px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+  .step { display:flex; gap:10px; align-items:center; color:var(--muted); font-size:.86rem; }
+  .step i { width:12px; height:12px; border-radius:50%; border:2px solid var(--line); flex:none; }
+  .step.done { color:var(--text); }
+  .step.done i { background:var(--honey); border-color:var(--honey); }
+  ul.items { padding-left:18px; color:var(--muted); font-size:.86rem; margin:12px 0; }
+  .total { font:700 1.1rem Georgia,serif; color:var(--honey); }
+  .order-foot { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-top:12px; }
+  .order-foot .btn { min-height:38px; font-size:.78rem; }
+  .empty { padding:28px 12px; text-align:center; color:var(--muted); font-size:.86rem; }
+  .note { color:var(--muted); font-size:.8rem; margin:14px 0 0; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <span class="eyebrow">Casa do Bolo do Léo Doce e Mel</span>
+  <h1>Área do cliente</h1>
+  <p class="lead" id="lead">Acompanhe os pedidos da sua mesa, do preparo ao pagamento.</p>
+
+  <section class="card" id="login">
+    <h2>Entrar na sua mesa</h2>
+    <p class="note">Use o número da mesa e o código de 4 dígitos entregue pela loja.</p>
+    <form id="login-form" novalidate>
+      <label for="mesa">Número da mesa</label>
+      <input id="mesa" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="Ex.: 12" required>
+      <label for="codigo">Código da mesa</label>
+      <input id="codigo" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="0000" required>
+      <button type="submit">Entrar</button>
+    </form>
+    <div class="error" id="error" role="alert"></div>
+    <div class="links">
+      <a class="btn outline" href="produtos.html">Ver cardápio</a>
+      <a class="btn outline" href="acompanhar.html">Acompanhar por pedido</a>
+    </div>
+  </section>
+
+  <section id="panel" hidden>
+    <div class="bar">
+      <div><span class="eyebrow">Você está na</span><div class="mesa-label">Mesa <span id="mesa-atual"></span></div></div>
+      <div class="bar-actions">
+        <button type="button" id="refresh">Atualizar</button>
+        <a class="btn outline" href="produtos.html">Pedir mais</a>
+        <button class="outline" type="button" id="sair">Sair</button>
+      </div>
+    </div>
+    <div id="orders"></div>
+    <p class="note">O status é atualizado pela loja. Esta página atualiza sozinha a cada 15 segundos.</p>
+    <div class="links">
+      <a class="btn outline" href="index.html">Voltar ao site</a>
+    </div>
+  </section>
+</main>
+<script>
+(function () {
+  "use strict";
+  var labels = { novo:"Recebido", em_preparo:"Em preparo", pronto:"Pronto", a_pagar:"A pagar", pago:"Pago", cancelado:"Cancelado" };
+  var steps = ["novo", "em_preparo", "pronto", "a_pagar", "pago"];
+  var timer = null;
+
+  function escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function money(cents) { return "R$ " + (Number(cents || 0) / 100).toFixed(2).replace(".", ","); }
+  function when(value) {
+    var data = new Date(value);
+    return isNaN(data.getTime()) ? "" : data.toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" });
+  }
+
+  function showLogin(message) {
+    if (timer) { clearInterval(timer); timer = null; }
+    document.getElementById("login").hidden = false;
+    document.getElementById("panel").hidden = true;
+    document.getElementById("lead").textContent = "Acompanhe os pedidos da sua mesa, do preparo ao pagamento.";
+    document.getElementById("error").textContent = message || "";
+  }
+
+  function showPanel(mesa) {
+    document.getElementById("login").hidden = true;
+    document.getElementById("panel").hidden = false;
+    document.getElementById("mesa-atual").textContent = mesa;
+    document.getElementById("lead").textContent = "Seus pedidos aparecem aqui com o status atualizado pela loja.";
+    loadOrders();
+    if (timer) clearInterval(timer);
+    timer = setInterval(loadOrders, 15000);
+  }
+
+  function orderHtml(order) {
+    var posicao = steps.indexOf(order.status);
+    var andamento = order.status === "cancelado"
+      ? '<div class="step done"><i></i>' + labels.cancelado + '</div>'
+      : steps.map(function (step, index) {
+          return '<div class="step' + (index <= posicao ? " done" : "") + '"><i></i>' + labels[step] + '</div>';
+        }).join("");
+    var itens = order.items.map(function (item) {
+      return "<li>" + item.qty + "x " + escapeHtml(item.name) + "</li>";
+    }).join("");
+    var query = "codigo=" + encodeURIComponent(order.code);
+    return '<article class="order">' +
+      '<div class="order-head"><span class="code">' + escapeHtml(order.code) + '</span><span class="when">' + escapeHtml(when(order.created_at)) + '</span></div>' +
+      '<span class="badge ' + escapeHtml(order.status) + '">' + escapeHtml(labels[order.status] || order.status) + '</span>' +
+      '<div class="steps">' + andamento + '</div>' +
+      '<ul class="items">' + itens + '</ul>' +
+      '<div class="order-foot"><span class="total">' + money(order.total_cents) + '</span>' +
+      '<a class="btn outline" href="comanda.html?' + query + '" target="_blank" rel="noopener noreferrer">Ver comanda</a></div>' +
+    '</article>';
+  }
+
+  function loadOrders() {
+    return fetch("/api/client/orders", { cache:"no-store" })
+      .then(function (r) {
+        if (r.status === 401) { showLogin("Sua sessão expirou. Entre novamente."); throw new Error("sessao"); }
+        return r.json();
+      })
+      .then(function (data) {
+        var orders = data.orders || [];
+        document.getElementById("orders").innerHTML = orders.length
+          ? orders.map(orderHtml).join("")
+          : '<div class="card empty">Nenhum pedido nesta mesa ainda. Escolha algo no cardápio e seu pedido aparece aqui.</div>';
+      })
+      .catch(function () {});
+  }
+
+  function entrar(event) {
+    event.preventDefault();
+    var mesa = document.getElementById("mesa").value.trim();
+    var code = document.getElementById("codigo").value.trim();
+    var error = document.getElementById("error");
+    error.textContent = "";
+    if (!mesa || !/^\d{4}$/.test(code)) { error.textContent = "Informe a mesa e o código de 4 dígitos."; return; }
+    fetch("/api/client/login", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json", "X-Requested-With":"CasaDoBolo" },
+      body: JSON.stringify({ mesa:mesa, code:code })
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok:r.ok, data:d }; }); })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.data.error || "Não foi possível entrar.");
+        document.getElementById("codigo").value = "";
+        showPanel(mesa);
+      })
+      .catch(function (e) { error.textContent = e.message; });
+  }
+
+  document.getElementById("login-form").addEventListener("submit", entrar);
+  document.getElementById("refresh").addEventListener("click", loadOrders);
+  document.getElementById("sair").addEventListener("click", function () {
+    fetch("/api/client/logout", { method:"POST", headers:{ "X-Requested-With":"CasaDoBolo" } })
+      .then(function () { showLogin(); });
+  });
+
+  fetch("/api/client/session", { cache:"no-store" })
+    .then(function (r) { return r.json(); })
+    .then(function (data) { if (data.ok) showPanel(data.mesa); })
+    .catch(function () {});
+})();
+</script>
+</body>
+</html>

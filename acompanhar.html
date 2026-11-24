@@ -64,8 +64,8 @@
       .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
   function money(cents) { return "R$ " + (Number(cents || 0) / 100).toFixed(2).replace(".", ","); }
-  var labels = { novo:"Recebido", em_preparo:"Em preparo", pronto:"Pronto", finalizado:"Finalizado", cancelado:"Cancelado" };
-  var steps = ["novo", "em_preparo", "pronto", "finalizado"];
+  var labels = { novo:"Recebido", em_preparo:"Em preparo", pronto:"Pronto", a_pagar:"A pagar", pago:"Pago", cancelado:"Cancelado" };
+  var steps = ["novo", "em_preparo", "pronto", "a_pagar", "pago"];
   var timer = null;
 
   function render(order) {

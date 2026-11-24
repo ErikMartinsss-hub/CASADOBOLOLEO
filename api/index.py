@@ -1,8 +1,11 @@
 """API da Casa do Bolo do Léo Doce e Mel na Vercel.
 
 Rotas: /api/catalog, /api/health, /api/orders, /api/orders/{code},
+/api/client/session, /api/client/login, /api/client/logout, /api/client/orders,
 /api/operator/session, /api/operator/login, /api/operator/logout,
-/api/operator/orders e /api/operator/orders/{id}.
+/api/operator/orders, /api/operator/orders/{id}, /api/operator/users,
+/api/operator/users/{id}, /api/operator/register, /api/operator/tables e
+/api/operator/tables/{id}.
 """
 
 import json
@@ -22,6 +25,7 @@ if str(ROOT) not in sys.path:
 from cloud_lib import catalog, pedidos, remote_db  # noqa: E402
 
 COOKIE_NAME = "cdm_session"
+CLIENT_COOKIE = "cdm_table"
 WRITE_HEADER = "X-Requested-With"
 WRITE_VALUE = "CasaDoBolo"
 RATE_LIMITS: dict[tuple[str, str], deque[float]] = defaultdict(deque)
@@ -118,14 +122,27 @@ class handler(BaseHTTPRequestHandler):
         entries.append(now)
         return True
 
-    def token(self) -> str | None:
+    def cookie_value(self, name: str) -> str | None:
         cookie = SimpleCookie()
         try:
             cookie.load(self.headers.get("Cookie") or "")
         except Exception:
             return None
-        morsel = cookie.get(COOKIE_NAME)
+        morsel = cookie.get(name)
         return morsel.value if morsel else None
+
+    def token(self) -> str | None:
+        return self.cookie_value(COOKIE_NAME)
+
+    def client_token(self) -> str | None:
+        return self.cookie_value(CLIENT_COOKIE)
+
+    def client_session(self) -> dict | None:
+        try:
+            pedidos.ensure_db()
+            return pedidos.table_for_session(self.client_token())
+        except Exception:
+            return None
 
     def is_operator(self) -> bool:
         try:
@@ -144,11 +161,11 @@ class handler(BaseHTTPRequestHandler):
         host = (self.headers.get("X-Forwarded-Host") or self.headers.get("Host") or "").split(":")[0]
         return parsed.scheme in ("http", "https") and parsed.hostname == host
 
-    def cookie(self, value: str, max_age: int) -> str:
+    def cookie(self, name: str, value: str, max_age: int) -> str:
         proto = self.headers.get("X-Forwarded-Proto", "")
         secure = "; Secure" if proto == "https" else ""
         return (
-            f"{COOKIE_NAME}={value}; HttpOnly; SameSite=Strict; Path=/; "
+            f"{name}={value}; HttpOnly; SameSite=Strict; Path=/; "
             f"Max-Age={max_age}{secure}"
         )
 
@@ -156,6 +173,7 @@ class handler(BaseHTTPRequestHandler):
         return {
             "code": order["code"],
             "type": order["type"],
+            "mesa": order.get("table_number", ""),
             "status": order["status"],
             "total_cents": order["total_cents"],
             "created_at": order["created_at"],
@@ -190,7 +208,51 @@ class handler(BaseHTTPRequestHandler):
             return
 
         if route == "/api/operator/session":
-            self.send_json({"ok": self.is_operator()})
+            self.send_json({"ok": self.is_operator(), "cadastro": False})
+            return
+
+        mesa = self.client_session()
+        if route == "/api/client/session":
+            self.send_json({"ok": bool(mesa), "mesa": mesa["number"] if mesa else ""})
+            return
+        if route == "/api/client/orders":
+            if not mesa:
+                self.deny("Entre com a mesa e o código.", 401)
+                return
+            try:
+                pedidos.ensure_db()
+                orders = pedidos.list_table_orders(mesa["number"])
+                self.send_json({"orders": [self.public_order(order) for order in orders]})
+            except Exception as error:
+                log_error(f"Falha ao listar pedidos da mesa: {error}")
+                self.deny("Erro interno. Tente novamente.", 500)
+            return
+        if route == "/api/operator/tables":
+            if not self.is_operator():
+                self.deny("Não autorizado.")
+                return
+            try:
+                self.send_json({"tables": pedidos.list_tables()})
+            except Exception as error:
+                log_error(f"Falha ao listar mesas: {error}")
+                self.deny("Erro interno. Tente novamente.", 500)
+            return
+
+        if route == "/api/operator/users":
+            if not self.is_operator():
+                self.deny("Não autorizado.")
+                return
+            try:
+                pedidos.ensure_db()
+                self.send_json(
+                    {
+                        "users": pedidos.list_operators(),
+                        "current_id": pedidos.operator_id_for_session(self.token()),
+                    }
+                )
+            except Exception as error:
+                log_error(f"Falha ao listar usuarios: {error}")
+                self.deny("Erro interno. Tente novamente.", 500)
             return
 
         if route == "/api/operator/orders":
@@ -235,7 +297,17 @@ class handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         route, _ = self.route_parts()
-        if route not in ("/api/orders", "/api/operator/login", "/api/operator/logout"):
+        code_route = re.fullmatch(r"/api/operator/tables/(\d+)/code", route)
+        if route not in (
+            "/api/orders",
+            "/api/client/login",
+            "/api/client/logout",
+            "/api/operator/login",
+            "/api/operator/logout",
+            "/api/operator/users",
+            "/api/operator/register",
+            "/api/operator/tables",
+        ) and not code_route:
             self.deny("Não encontrado.", 404)
             return
         if not self.require_write():
@@ -248,7 +320,10 @@ class handler(BaseHTTPRequestHandler):
                     self.deny("Muitos pedidos. Aguarde um momento.", 429)
                     return
                 pedidos.ensure_db()
-                order = pedidos.create_order(self.read_json())
+                mesa = self.client_session()
+                order = pedidos.create_order(
+                    self.read_json(), mesa["number"] if mesa else ""
+                )
                 self.send_json(
                     {
                         "ok": True,
@@ -260,24 +335,84 @@ class handler(BaseHTTPRequestHandler):
                 )
                 return
 
+            if route == "/api/client/login":
+                if not self.allow("client_login", 30, 900):
+                    self.deny("Muitas tentativas. Tente novamente em 15 minutos.", 429)
+                    return
+                data = self.read_json()
+                pedidos.ensure_db()
+                mesaid = pedidos.verify_table(data.get("mesa"), data.get("code"))
+                if not mesaid:
+                    self.deny("Mesa ou código incorretos.")
+                    return
+                token, expires = pedidos.create_table_session(mesaid)
+                cookie = self.cookie(
+                    CLIENT_COOKIE, token, pedidos.CLIENT_SESSION_HOURS * 3600
+                )
+                self.send_json({"ok": True, "expires": expires}, extra=(("Set-Cookie", cookie),))
+                return
+
+            if route == "/api/client/logout":
+                pedidos.delete_table_session(self.client_token())
+                cookie = self.cookie(CLIENT_COOKIE, "", 0)
+                self.send_json({"ok": True}, extra=(("Set-Cookie", cookie),))
+                return
+
+            if route == "/api/operator/tables":
+                if not self.is_operator() or not self.require_write():
+                    self.deny("Não autorizado.", 403)
+                    return
+                pedidos.ensure_db()
+                data = self.read_json()
+                table = pedidos.add_table(data.get("mesa"))
+                self.send_json({"ok": True, **table}, 201)
+                return
+
+            if code_route:
+                if not self.is_operator() or not self.require_write():
+                    self.deny("Não autorizado.", 403)
+                    return
+                pedidos.ensure_db()
+                code = pedidos.regenerate_table_code(int(code_route.group(1)))
+                self.send_json({"ok": True, "code": code})
+                return
+
+            if route == "/api/operator/register":
+                self.deny("Cadastro disponível apenas no servidor local.", 403)
+                return
+
             if route == "/api/operator/login":
-                if not self.allow("login", 8, 900):
+                if not self.allow("login", 20, 900):
                     self.deny("Muitas tentativas. Tente novamente em 15 minutos.", 429)
                     return
                 data = self.read_json()
                 username = str(data.get("username") or "")
                 password = str(data.get("password") or "")
                 pedidos.ensure_db()
-                if not pedidos.verify_password(username, password):
+                operator_id = pedidos.verify_password(username, password)
+                if not operator_id:
                     self.deny("Usuário ou senha incorretos.")
                     return
-                token, expires = pedidos.create_session()
-                cookie = self.cookie(token, pedidos.SESSION_HOURS * 3600)
+                token, expires = pedidos.create_session(operator_id)
+                cookie = self.cookie(COOKIE_NAME, token, pedidos.SESSION_HOURS * 3600)
                 self.send_json({"ok": True, "expires": expires}, extra=(("Set-Cookie", cookie),))
                 return
 
+            if route == "/api/operator/users":
+                if not self.is_operator() or not self.require_write():
+                    self.deny("Não autorizado.", 403)
+                    return
+                if not self.allow("users", 20, 3600):
+                    self.deny("Muitos cadastros. Aguarde um momento.", 429)
+                    return
+                pedidos.ensure_db()
+                data = self.read_json()
+                operator_id = pedidos.add_operator(data.get("username"), data.get("password"))
+                self.send_json({"ok": True, "id": operator_id}, 201)
+                return
+
             pedidos.delete_session(self.token())
-            cookie = self.cookie("", 0)
+            cookie = self.cookie(COOKIE_NAME, "", 0)
             self.send_json({"ok": True}, extra=(("Set-Cookie", cookie),))
         except ValueError as error:
             self.deny(str(error), 400)
@@ -285,6 +420,31 @@ class handler(BaseHTTPRequestHandler):
             self.deny("JSON inválido.", 400)
         except Exception as error:
             log_error(f"Erro ao processar {route}: {error}")
+            self.deny("Erro interno. Tente novamente.", 500)
+
+    def do_DELETE(self) -> None:
+        route, _ = self.route_parts()
+        match = re.fullmatch(r"/api/operator/users/(\d+)", route)
+        table_match = re.fullmatch(r"/api/operator/tables/(\d+)", route)
+        if not match and not table_match:
+            self.deny("Não encontrado.", 404)
+            return
+        if not self.is_operator() or not self.require_write():
+            self.deny("Não autorizado.", 403)
+            return
+        try:
+            pedidos.ensure_db()
+            if match:
+                pedidos.remove_operator(
+                    int(match.group(1)), pedidos.operator_id_for_session(self.token())
+                )
+            else:
+                pedidos.remove_table(int(table_match.group(1)))
+            self.send_json({"ok": True})
+        except ValueError as error:
+            self.deny(str(error), 400)
+        except Exception as error:
+            log_error(f"Falha ao remover usuario: {error}")
             self.deny("Erro interno. Tente novamente.", 500)
 
     def do_PATCH(self) -> None:

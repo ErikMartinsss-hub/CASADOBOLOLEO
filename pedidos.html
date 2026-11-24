@@ -21,10 +21,12 @@
   .btn:disabled { opacity:.5; cursor:not-allowed; }
   .login { max-width:380px; margin:10vh auto; padding:28px; border-radius:20px; background:var(--glass); border:1px solid var(--line); }
   .login h1 { margin-bottom:6px; }
+  .login h2 { margin:0 0 6px; font:700 1.2rem Georgia,serif; }
   .login p { color:var(--muted); font-size:.84rem; }
   .login input { width:100%; min-height:48px; padding:11px 14px; margin:10px 0; border-radius:12px; border:1px solid var(--line); background:rgba(0,0,0,.32); color:var(--text); }
   .login .btn { width:100%; }
   .error { color:var(--red); font-size:.8rem; min-height:20px; }
+  .ok { color:var(--green); font-size:.8rem; min-height:20px; }
   .stats { display:flex; gap:10px; flex-wrap:wrap; margin:18px 0 22px; }
   .stat { flex:1; min-width:160px; padding:14px 18px; border-radius:16px; background:var(--glass); border:1px solid var(--line); }
   .stat b { display:block; font:700 1.7rem Georgia,serif; color:var(--honey); }
@@ -39,8 +41,10 @@
   .order-code { font:700 1.5rem Georgia,serif; color:var(--honey); }
   .order-time { font-size:.7rem; color:var(--muted); }
   .badge { display:inline-block; margin:8px 0; padding:4px 10px; border-radius:999px; font-size:.68rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; background:rgba(246,180,92,.14); color:var(--honey); }
-  .badge.pronto { background:rgba(143,214,160,.16); color:var(--green); }
+  .badge.pronto, .badge.pago { background:rgba(143,214,160,.16); color:var(--green); }
+  .badge.a_pagar { background:rgba(246,180,92,.26); }
   .badge.cancelado { background:rgba(255,157,146,.14); color:var(--red); }
+  .table-tag { display:inline-block; margin-right:8px; padding:3px 9px; border-radius:8px; background:rgba(246,180,92,.16); color:var(--honey); font-size:.72rem; font-weight:800; }
   .customer { font-weight:700; }
   .customer a { color:var(--honey); text-decoration:none; }
   .address, .notes { font-size:.78rem; color:var(--muted); margin-top:3px; }
@@ -51,7 +55,23 @@
   .actions { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
   .actions .btn { min-height:34px; padding:6px 11px; font-size:.72rem; }
   .empty { padding:30px 10px; text-align:center; color:var(--muted); font-size:.82rem; }
-  @media (max-width: 860px) { .columns { grid-template-columns:1fr; } }
+  .users-panel { margin-top:18px; padding:18px; border-radius:20px; background:rgba(10,6,5,.36); border:1px solid var(--line); }
+  .users-panel h2 { margin:0 0 12px; font:700 1.2rem Georgia,serif; }
+  .user-add { display:grid; grid-template-columns:1fr 1fr auto; gap:8px; align-items:center; }
+  .user-add input { min-height:40px; padding:9px 11px; border-radius:10px; border:1px solid var(--line); background:rgba(0,0,0,.32); color:var(--text); }
+  .user-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-top:1px solid var(--line); }
+  .user-row span { font-weight:700; }
+  .user-row .btn { min-height:34px; padding:6px 11px; font-size:.72rem; }
+  .table-add { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; }
+  .table-add input { min-height:40px; padding:9px 11px; border-radius:10px; border:1px solid var(--line); background:rgba(0,0,0,.32); color:var(--text); }
+  .table-row { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; padding:10px 0; border-top:1px solid var(--line); }
+  .table-row span.mesa { font-weight:700; min-width:96px; }
+  .table-row .btns { display:flex; gap:6px; flex-wrap:wrap; }
+  .table-row .btn { min-height:34px; padding:6px 11px; font-size:.72rem; }
+  .table-code { color:var(--green); font-size:.84rem; font-weight:700; }
+  .note { color:var(--muted); font-size:.78rem; margin:0 0 10px; }
+  .back-link { display:flex; align-items:center; justify-content:center; width:100%; min-height:40px; margin-top:8px; border-radius:999px; border:1px solid var(--line); color:var(--text); text-decoration:none; font-weight:700; font-size:.8rem; }
+  @media (max-width: 860px) { .columns { grid-template-columns:1fr; } .user-add, .table-add { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -71,6 +91,17 @@
     <input id="password" type="password" autocomplete="current-password" placeholder="Senha" aria-label="Senha">
     <button class="btn primary" id="enter" type="button">Entrar</button>
     <div class="error" id="login-error" role="alert"></div>
+    <a class="back-link" href="index.html">&larr; Voltar ao site</a>
+  </section>
+
+  <section class="login" id="cadastro" hidden>
+    <h2>Cadastrar operador</h2>
+    <p>Disponível apenas no computador local. Senha mínima: 6 caracteres.</p>
+    <input id="cadastro-usuario" type="text" autocomplete="username" placeholder="Usuário" aria-label="Usuário do novo operador" maxlength="30">
+    <input id="cadastro-senha" type="password" autocomplete="new-password" placeholder="Senha" aria-label="Senha do novo operador">
+    <button class="btn" id="cadastro-enviar" type="button">Cadastrar operador</button>
+    <div class="error" id="cadastro-erro" role="alert"></div>
+    <div class="ok" id="cadastro-ok" role="status"></div>
   </section>
 
   <section id="dashboard" hidden>
@@ -79,6 +110,27 @@
       <div class="column"><h2>Retirada no balcão <span id="count-balcao"></span></h2><div id="list-balcao"></div></div>
       <div class="column"><h2>Delivery <span id="count-delivery"></span></h2><div id="list-delivery"></div></div>
     </div>
+    <section class="users-panel" id="tables-panel">
+      <h2>Mesas</h2>
+      <p class="note">Cada mesa recebe um código de 4 dígitos. Entregue o código ao cliente; ele não aparece de novo. Gerar outro código encerra a sessão da mesa.</p>
+      <form class="table-add" id="table-form">
+        <input id="new-mesa" type="text" inputmode="numeric" autocomplete="off" placeholder="Número da mesa" aria-label="Número da mesa" maxlength="4">
+        <button class="btn primary" type="submit">Cadastrar mesa</button>
+      </form>
+      <div class="error" id="table-error" role="alert"></div>
+      <div class="ok" id="table-code" role="status"></div>
+      <div id="table-list"></div>
+    </section>
+    <section class="users-panel" id="users-panel">
+      <h2>Usuários do painel</h2>
+      <form class="user-add" id="user-form">
+        <input id="new-username" type="text" autocomplete="off" placeholder="Novo usuário" aria-label="Novo usuário" maxlength="30">
+        <input id="new-password" type="password" autocomplete="new-password" placeholder="Senha (mín. 6)" aria-label="Senha do novo usuário">
+        <button class="btn primary" type="submit">Cadastrar</button>
+      </form>
+      <div class="error" id="user-error" role="alert"></div>
+      <div id="user-list"></div>
+    </section>
   </section>
 </div>
 <script>
@@ -86,6 +138,8 @@
   "use strict";
   var passwordEl = document.getElementById("password");
   var loginError = document.getElementById("login-error");
+  var userError = document.getElementById("user-error");
+  var cadastroPermitido = false;
   var timer = null;
 
   function escapeHtml(value) {
@@ -104,15 +158,18 @@
     var d = new Date(value);
     return isNaN(d.getTime()) ? "" : d.toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit" });
   }
-  var statusLabels = { novo:"Novo", em_preparo:"Em preparo", pronto:"Pronto", finalizado:"Finalizado", cancelado:"Cancelado" };
-  var nextStatus = { novo:"em_preparo", em_preparo:"pronto", pronto:"finalizado" };
-  var nextLabel = { em_preparo:"Iniciar preparo", pronto:"Marcar pronto", finalizado:"Finalizar" };
+  var statusLabels = { novo:"Recebido", em_preparo:"Em preparo", pronto:"Pronto", a_pagar:"A pagar", pago:"Pago", cancelado:"Cancelado" };
+  var nextStatus = { novo:"em_preparo", em_preparo:"pronto", pronto:"a_pagar", a_pagar:"pago" };
+  var nextLabel = { em_preparo:"Iniciar preparo", pronto:"Marcar pronto", a_pagar:"Enviar conta", pago:"Marcar pago" };
 
   function showDashboard() {
     document.getElementById("login").hidden = true;
+    document.getElementById("cadastro").hidden = true;
     document.getElementById("dashboard").hidden = false;
     document.getElementById("top-actions").hidden = false;
     load();
+    loadUsers();
+    loadTables();
     if (timer) clearInterval(timer);
     timer = setInterval(load, 15000);
   }
@@ -125,6 +182,7 @@
     }).join("");
     return '<article class="order' + (active ? " is-new" : "") + '" data-id="' + order.id + '">' +
       '<div class="order-head"><span class="order-code">' + escapeHtml(order.code) + '</span><span class="order-time">' + escapeHtml(time(order.created_at)) + '</span></div>' +
+      (order.mesa ? '<span class="table-tag">Mesa ' + escapeHtml(order.mesa) + '</span>' : '') +
       '<span class="badge ' + escapeHtml(order.status) + '">' + escapeHtml(statusLabels[order.status] || order.status) + '</span>' +
       '<div class="customer">' + escapeHtml(order.customer_name) + ' &middot; <a href="tel:' + escapeHtml(order.phone) + '">' + escapeHtml(phone(order.phone)) + '</a></div>' +
       (order.type === "delivery" ? '<div class="address">Entrega: ' + escapeHtml(order.address) + '</div>' : '') +
@@ -166,11 +224,74 @@
       .catch(function () {});
   }
 
+  function loadUsers() {
+    return fetch("/api/operator/users", { cache:"no-store" })
+      .then(function (r) {
+        if (r.status === 401) { showLogin(); throw new Error("Sessão expirada."); }
+        return r.json();
+      })
+      .then(function (data) {
+        var own = data.current_id;
+        var only = data.users.length === 1;
+        document.getElementById("user-list").innerHTML = data.users.map(function (user) {
+          var blocked = user.id === own || only;
+          return '<div class="user-row"><span>' + escapeHtml(user.username) + '</span>' +
+            '<button class="btn danger" data-remove="' + user.id + '" type="button"' +
+            (blocked ? ' disabled title="Não é possível remover este usuário"' : '') +
+            '>Remover</button></div>';
+        }).join("");
+      })
+      .catch(function () {});
+  }
+
+  function loadTables() {
+    return fetch("/api/operator/tables", { cache:"no-store" })
+      .then(function (r) {
+        if (r.status === 401) { showLogin(); throw new Error("Sessão expirada."); }
+        return r.json();
+      })
+      .then(function (data) {
+        document.getElementById("table-list").innerHTML = data.tables.length
+          ? data.tables.map(function (table) {
+              return '<div class="table-row"><span class="mesa">Mesa ' + escapeHtml(table.number) + '</span>' +
+                '<div class="btns">' +
+                  '<button class="btn" data-newcode="' + table.id + '" type="button">Novo código</button>' +
+                  '<button class="btn danger" data-removemesa="' + table.id + '" type="button">Remover</button>' +
+                '</div></div>';
+            }).join("")
+          : '<div class="empty">Nenhuma mesa cadastrada.</div>';
+      })
+      .catch(function () {});
+  }
+
   function showLogin() {
     if (timer) { clearInterval(timer); timer = null; }
     document.getElementById("login").hidden = false;
+    document.getElementById("cadastro").hidden = !cadastroPermitido;
     document.getElementById("dashboard").hidden = true;
     document.getElementById("top-actions").hidden = true;
+  }
+
+  function cadastrar() {
+    var nome = document.getElementById("cadastro-usuario").value;
+    var senha = document.getElementById("cadastro-senha").value;
+    var erro = document.getElementById("cadastro-erro");
+    var ok = document.getElementById("cadastro-ok");
+    erro.textContent = "";
+    ok.textContent = "";
+    fetch("/api/operator/register", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json", "X-Requested-With":"CasaDoBolo" },
+      body: JSON.stringify({ username:nome, password:senha })
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok:r.ok, data:d }; }); })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.data.error || "Falha ao cadastrar.");
+        ok.textContent = "Operador cadastrado. Entre com usuario e senha.";
+        document.getElementById("cadastro-usuario").value = "";
+        document.getElementById("cadastro-senha").value = "";
+      })
+      .catch(function (e) { erro.textContent = e.message; });
   }
 
   function login() {
@@ -195,11 +316,103 @@
   document.getElementById("enter").addEventListener("click", login);
   document.getElementById("username").addEventListener("keydown", function (e) { if (e.key === "Enter") login(); });
   passwordEl.addEventListener("keydown", function (e) { if (e.key === "Enter") login(); });
+  document.getElementById("cadastro-enviar").addEventListener("click", cadastrar);
+  document.getElementById("cadastro-usuario").addEventListener("keydown", function (e) { if (e.key === "Enter") cadastrar(); });
+  document.getElementById("cadastro-senha").addEventListener("keydown", function (e) { if (e.key === "Enter") cadastrar(); });
   document.getElementById("logout").addEventListener("click", function () {
     fetch("/api/operator/logout", { method:"POST", headers:{ "X-Requested-With":"CasaDoBolo" } })
       .then(function () { showLogin(); });
   });
-  document.getElementById("refresh").addEventListener("click", load);
+  document.getElementById("refresh").addEventListener("click", function () { load(); loadTables(); });
+  document.getElementById("table-form").addEventListener("submit", function (event) {
+    event.preventDefault();
+    var mesa = document.getElementById("new-mesa").value.trim();
+    var erro = document.getElementById("table-error");
+    var code = document.getElementById("table-code");
+    erro.textContent = "";
+    code.textContent = "";
+    fetch("/api/operator/tables", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json", "X-Requested-With":"CasaDoBolo" },
+      body: JSON.stringify({ mesa:mesa })
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok:r.ok, data:d }; }); })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.data.error || "Falha ao cadastrar mesa.");
+        document.getElementById("new-mesa").value = "";
+        code.textContent = "Mesa " + result.data.number + " — código " + result.data.code + ". Anote agora.";
+        return loadTables();
+      })
+      .catch(function (e) { erro.textContent = e.message; });
+  });
+  document.getElementById("tables-panel").addEventListener("click", function (event) {
+    var codeButton = event.target.closest("button[data-newcode]");
+    var removeButton = event.target.closest("button[data-removemesa]");
+    var erro = document.getElementById("table-error");
+    var code = document.getElementById("table-code");
+    erro.textContent = "";
+    if (codeButton) {
+      fetch("/api/operator/tables/" + codeButton.getAttribute("data-newcode") + "/code", {
+        method:"POST",
+        headers:{ "X-Requested-With":"CasaDoBolo" }
+      })
+        .then(function (r) { return r.json().then(function (d) { return { ok:r.ok, data:d }; }); })
+        .then(function (result) {
+          if (!result.ok) throw new Error(result.data.error || "Falha ao gerar código.");
+          code.textContent = "Novo código: " + result.data.code + ". Anote agora.";
+        })
+        .catch(function (e) { erro.textContent = e.message; });
+      return;
+    }
+    if (!removeButton) return;
+    if (!window.confirm("Remover esta mesa?")) return;
+    fetch("/api/operator/tables/" + removeButton.getAttribute("data-removemesa"), {
+      method:"DELETE",
+      headers:{ "X-Requested-With":"CasaDoBolo" }
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok:r.ok, data:d }; }); })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.data.error || "Falha ao remover mesa.");
+        code.textContent = "";
+        return loadTables();
+      })
+      .catch(function (e) { erro.textContent = e.message; });
+  });
+  document.getElementById("user-form").addEventListener("submit", function (event) {
+    event.preventDefault();
+    var name = document.getElementById("new-username").value;
+    var secret = document.getElementById("new-password").value;
+    userError.textContent = "";
+    fetch("/api/operator/users", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json", "X-Requested-With":"CasaDoBolo" },
+      body: JSON.stringify({ username:name, password:secret })
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok:r.ok, data:d }; }); })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.data.error || "Falha ao cadastrar.");
+        document.getElementById("new-username").value = "";
+        document.getElementById("new-password").value = "";
+        return loadUsers();
+      })
+      .catch(function (e) { userError.textContent = e.message; });
+  });
+  document.getElementById("user-list").addEventListener("click", function (event) {
+    var button = event.target.closest("button[data-remove]");
+    if (!button || button.disabled) return;
+    if (!window.confirm("Remover este usuário?")) return;
+    button.disabled = true;
+    fetch("/api/operator/users/" + button.getAttribute("data-remove"), {
+      method:"DELETE",
+      headers:{ "X-Requested-With":"CasaDoBolo" }
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok:r.ok, data:d }; }); })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.data.error || "Falha ao remover.");
+        return loadUsers();
+      })
+      .catch(function (e) { userError.textContent = e.message; button.disabled = false; });
+  });
   document.getElementById("dashboard").addEventListener("click", function (event) {
     var button = event.target.closest("button[data-status]");
     if (!button) return;
@@ -220,7 +433,11 @@
 
   fetch("/api/operator/session", { cache:"no-store" })
     .then(function (r) { return r.json(); })
-    .then(function (data) { if (data.ok) showDashboard(); })
+    .then(function (data) {
+      cadastroPermitido = !!data.cadastro;
+      if (data.ok) showDashboard();
+      else document.getElementById("cadastro").hidden = !cadastroPermitido;
+    })
     .catch(function () {});
 })();
 </script>

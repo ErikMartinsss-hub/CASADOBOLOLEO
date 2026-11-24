@@ -83,7 +83,7 @@
     return isNaN(d.getTime()) ? String(value || "") : d.toLocaleString("pt-BR");
   }
   function statusLabel(status) {
-    return { novo:"NOVO", em_preparo:"EM PREPARO", pronto:"PRONTO", finalizado:"FINALIZADO", cancelado:"CANCELADO" }[status] || String(status || "").toUpperCase();
+    return { novo:"RECEBIDO", em_preparo:"EM PREPARO", pronto:"PRONTO", a_pagar:"A PAGAR", pago:"PAGO", cancelado:"CANCELADO" }[status] || String(status || "").toUpperCase();
   }
 
   function render(order, store) {
@@ -100,6 +100,7 @@
         '<hr class="rule">' +
         '<div class="code">' + escapeHtml(order.code) + '</div>' +
         '<div class="code-label">PEDIDO</div>' +
+        (order.mesa ? '<div class="row"><span class="label">MESA</span><span class="value">' + escapeHtml(order.mesa) + '</span></div>' : '') +
         '<hr class="rule">' +
         (store ?
           '<div class="row"><span class="label">TIPO</span><span class="value">' + (delivery ? "DELIVERY" : "RETIRADA BALCAO") + '</span></div>' +
