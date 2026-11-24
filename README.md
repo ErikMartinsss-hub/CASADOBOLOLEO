@@ -1,4 +1,4 @@
-# Casa do Bolo do Léo Doce Mel
+# Casa do Bolo do Léo Doce e Mel
 
 Site cinematográfico, cardápio, pedidos e acompanhamento.
 

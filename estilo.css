@@ -90,6 +90,10 @@ p { margin: 0 0 1em; color: var(--texto-suave); text-wrap: pretty; }
 .momento--centro.ativo { transform: translate(-50%, 0); }
 .titulo-abertura { margin-bottom: .3em; }
 .apoio { font-size: clamp(16px, 1.3vw, 20px); margin: 0; }
+@media (min-width: 861px) {
+  .titulo-abertura { font-size: clamp(44px, 4.2vw, 64px); }
+  .apoio { font-size: clamp(15px, 1.05vw, 17px); }
+}
 .destaque { font-family: var(--fonte-titulo); font-size: clamp(24px, 2.8vw, 42px); line-height: 1.2; color: var(--texto); margin: 0 0 .6em; }
 .destaque:last-child { margin: 0; }
 .cine-dica {

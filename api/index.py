@@ -1,4 +1,4 @@
-"""API da Casa do Bolo do Léo Doce Mel na Vercel.
+"""API da Casa do Bolo do Léo Doce e Mel na Vercel.
 
 Rotas: /api/catalog, /api/health, /api/orders, /api/orders/{code},
 /api/operator/session, /api/operator/login, /api/operator/logout,

@@ -1,5 +1,5 @@
 window.SITE = {
-  nome: "Casa do Bolo do Léo Doce Mel",
+  nome: "Casa do Bolo do Léo Doce e Mel",
 
   whatsapp: {
     numero: "5511962463805", // DDI + DDD + número, sem espaços
@@ -10,7 +10,7 @@ window.SITE = {
     email: "contato@example.com",
     // Opcional: chave do Web3Forms (https://web3forms.com). Se vazio, usa FormSubmit.
     web3formsChave: "",
-    assunto: "Novo contato pelo site Casa do Bolo do Léo Doce Mel",
+    assunto: "Novo contato pelo site Casa do Bolo do Léo Doce e Mel",
   },
 
   frames: {
