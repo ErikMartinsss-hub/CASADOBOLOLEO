@@ -6,89 +6,24 @@
 
   /* ── Rolagem que toca o vídeo ─────────────────────────────────────────── */
   const cine = document.querySelector(".cine");
-  const canvas = cine && cine.querySelector(".cine-canvas");
-  if (cine && canvas && S.frames && S.frames.total) {
-    const ctx = canvas.getContext("2d");
-    // No celular, metade dos quadros basta e o dedo manda na velocidade.
-    const passo = celular ? 2 : 1;
-    const total = Math.ceil(S.frames.total / passo);
-    const padrao = celular ? S.frames.mobile : S.frames.desktop;
-    const src = (i) => padrao.replace("{n}", String(i * passo + 1).padStart(4, "0"));
-    const quadros = new Array(total);
+  const video = cine && cine.querySelector(".cine-video");
+  if (cine && video) {
+    if (celular) cine.style.setProperty("--altura", "320vh");
+    video.poster = celular
+      ? "assets/frames/vertical/f_0001.webp"
+      : "assets/frames/desktop/f_0001.webp";
+    video.src = celular
+      ? "assets/video/bolo-vertical.mp4"
+      : "assets/video/bolo-desktop.mp4";
+    video.load();
+
     const momentos = [...cine.querySelectorAll(".momento")];
-    const naFila = new Set();
-    const fila = [];
-    const limite = celular ? 3 : 6;
-    const raio = celular ? 5 : 10;
-    let alvo = 0, atual = 0, desenhado = -1, ativas = 0, animando = false;
-
-    const carregar = (i, depois) => {
-      if (quadros[i]) {
-        if (depois) depois();
-        return quadros[i];
-      }
-      const img = new Image();
-      img.decoding = "async";
-      img.onload = () => {
-        if (Math.round(atual) === i || desenhado === -1) desenhar(i, true);
-        if (depois) depois();
-      };
-      img.onerror = () => { if (depois) depois(); };
-      img.src = src(i);
-      quadros[i] = img;
-      return img;
-    };
-
-    const bombar = () => {
-      while (ativas < limite && fila.length) {
-        const i = fila.shift();
-        naFila.delete(i);
-        if (quadros[i]) continue;
-        ativas++;
-        carregar(i, () => { ativas--; bombar(); });
-      }
-    };
-
-    // Só busca quadros perto do dedo: nada de baixar o filme inteiro no começo.
-    const agendar = (indice) => {
-      for (let d = 0; d <= raio; d++) {
-        for (const i of [indice - d, indice + d]) {
-          if (i >= 0 && i < total && !naFila.has(i) && !quadros[i]) {
-            naFila.add(i);
-            fila.push(i);
-          }
-        }
-      }
-      bombar();
-    };
-
-    const pronto = (i) => quadros[i] && quadros[i].complete && quadros[i].naturalWidth;
-    const maisProximo = (i) => {
-      for (let d = 0; d < total; d++) {
-        if (pronto(i - d)) return i - d;
-        if (pronto(i + d)) return i + d;
-      }
-      return -1;
-    };
-
-    const ajustar = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = Math.round(canvas.clientWidth * dpr);
-      canvas.height = Math.round(canvas.clientHeight * dpr);
-      desenhado = -1;
-      desenhar(Math.round(atual), true);
-    };
-
-    function desenhar(i, forcar) {
-      const j = maisProximo(i);
-      if (j < 0 || (j === desenhado && !forcar)) return;
-      const img = quadros[j];
-      const cw = canvas.width, ch = canvas.height;
-      const escala = Math.max(cw / img.naturalWidth, ch / img.naturalHeight); // "cover"
-      const w = img.naturalWidth * escala, h = img.naturalHeight * escala;
-      ctx.drawImage(img, (cw - w) / 2, (ch - h) / 2, w, h);
-      desenhado = j;
-    }
+    let agendado = false;
+    let alvoAtual = 0;
+    let ultimoSeek = 0;
+    let esperaSeek = 0;
+    const INTERVALO_SEEK = 90;
+    const TOLERANCIA_SEEK = 0.12;
 
     const progresso = () => {
       const r = cine.getBoundingClientRect();
@@ -104,33 +39,46 @@
       cine.classList.toggle("andou", p > 0.02);
     };
 
-    const animar = () => {
-      atual += (alvo - atual) * 0.18;
-      if (Math.abs(alvo - atual) < 0.05) atual = alvo;
-      desenhar(Math.round(atual));
-      atualizarMomentos(atual / (total - 1));
-      if (atual === alvo) animando = false;
-      else requestAnimationFrame(animar);
+    const tempoAlvo = (p) => {
+      const duracao = video.duration;
+      if (!duracao || !isFinite(duracao)) return null;
+      return Math.min(duracao - 0.1, p * (duracao - 0.1));
     };
 
-    const atualizar = () => {
-      alvo = progresso() * (total - 1);
-      if (celular) {
-        atual = alvo;
-        desenhar(Math.round(atual));
-        atualizarMomentos(atual / (total - 1));
-      } else if (!animando) {
-        animando = true;
-        requestAnimationFrame(animar);
+    const buscar = () => {
+      clearTimeout(esperaSeek);
+      if (video.seeking || video.readyState < 2) return;
+      if (Math.abs(video.currentTime - alvoAtual) < TOLERANCIA_SEEK) return;
+      const agora = performance.now();
+      const falta = INTERVALO_SEEK - (agora - ultimoSeek);
+      if (falta > 0) {
+        esperaSeek = setTimeout(buscar, falta);
+        return;
       }
-      agendar(Math.round(alvo));
+      ultimoSeek = agora;
+      video.currentTime = alvoAtual;
     };
 
-    carregar(0);
-    ajustar();
-    atualizar();
-    addEventListener("scroll", atualizar, { passive: true });
-    addEventListener("resize", () => { ajustar(); atualizar(); });
+    const aplicar = () => {
+      const p = progresso();
+      atualizarMomentos(p);
+      const alvo = tempoAlvo(p);
+      if (alvo === null) return;
+      alvoAtual = alvo;
+      buscar();
+    };
+
+    const aoRolar = () => {
+      if (agendado) return;
+      agendado = true;
+      requestAnimationFrame(() => { agendado = false; aplicar(); });
+    };
+
+    video.addEventListener("loadedmetadata", aoRolar);
+    video.addEventListener("seeked", aoRolar);
+    addEventListener("scroll", aoRolar, { passive: true });
+    addEventListener("resize", aoRolar);
+    aplicar();
     if (reduzir) atualizarMomentos(0);
   }
 

@@ -71,7 +71,7 @@ p { margin: 0 0 1em; color: var(--texto-suave); text-wrap: pretty; }
 /* ── Abertura cinematográfica ──────────────────────────────────────────── */
 .cine { position: relative; height: var(--altura, 400vh); }
 .cine-palco { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; }
-.cine-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cine-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .cine-vinheta {
   position: absolute; inset: 0; pointer-events: none;
   background:
@@ -244,6 +244,12 @@ p { margin: 0 0 1em; color: var(--texto-suave); text-wrap: pretty; }
             mask-image: linear-gradient(to bottom, transparent, #000 25%, #000 55%, transparent); }
   .momento, .momento--direita { left: var(--gutter); right: var(--gutter); bottom: 10vh; }
   .momento--centro, .momento--centro.ativo { left: var(--gutter); right: var(--gutter); transform: none; }
+}
+
+/* Celular: menos composição durante a rolagem do vídeo */
+@media (max-width: 760px) {
+  body::after { animation: none; opacity: .04; }
+  .painel, .topo.rolou { backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
