@@ -14,8 +14,8 @@ window.SITE = {
   },
 
   frames: {
-    total: 160, // valor impresso pelo fatiar_frames.sh
-    desktop: "assets/frames/desktop/f_{n}.webp",
-    mobile: "assets/frames/vertical/f_{n}.webp",
+    total: 6, // imagens leves do hero
+    desktop: "assets/hero/desktop/h{n}.webp",
+    mobile: "assets/hero/mobile/h{n}.webp",
   },
 };

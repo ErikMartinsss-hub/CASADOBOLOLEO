@@ -71,7 +71,7 @@ p { margin: 0 0 1em; color: var(--texto-suave); text-wrap: pretty; }
 /* ── Abertura cinematográfica ──────────────────────────────────────────── */
 .cine { position: relative; height: var(--altura, 400vh); }
 .cine-palco { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; }
-.cine-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.cine-imagem { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: var(--fundo); }
 .cine-vinheta {
   position: absolute; inset: 0; pointer-events: none;
   background:

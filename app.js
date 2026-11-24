@@ -1,29 +1,18 @@
 (() => {
   const S = window.SITE || {};
   const reduzir = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const celular = matchMedia("(max-width: 760px)").matches;
+  let celular = matchMedia("(max-width: 760px)").matches;
 
-
-  /* ── Rolagem que toca o vídeo ─────────────────────────────────────────── */
+  /* ── Rolagem que troca as imagens do hero ─────────────────────────────── */
   const cine = document.querySelector(".cine");
-  const video = cine && cine.querySelector(".cine-video");
-  if (cine && video) {
-    if (celular) cine.style.setProperty("--altura", "320vh");
-    video.poster = celular
-      ? "assets/frames/vertical/f_0001.webp"
-      : "assets/frames/desktop/f_0001.webp";
-    video.src = celular
-      ? "assets/video/bolo-vertical.mp4"
-      : "assets/video/bolo-desktop.mp4";
-    video.load();
+  const imagem = cine && cine.querySelector(".cine-imagem");
+  if (cine && imagem) {
+    cine.style.setProperty("--altura", celular ? "320vh" : "420vh");
 
     const momentos = [...cine.querySelectorAll(".momento")];
     let agendado = false;
-    let alvoAtual = 0;
-    let ultimoSeek = 0;
-    let esperaSeek = 0;
-    const INTERVALO_SEEK = 90;
-    const TOLERANCIA_SEEK = 0.12;
+    let quadros = [];
+    let indiceAtual = -1;
 
     const progresso = () => {
       const r = cine.getBoundingClientRect();
@@ -39,33 +28,33 @@
       cine.classList.toggle("andou", p > 0.02);
     };
 
-    const tempoAlvo = (p) => {
-      const duracao = video.duration;
-      if (!duracao || !isFinite(duracao)) return null;
-      return Math.min(duracao - 0.1, p * (duracao - 0.1));
-    };
-
-    const buscar = () => {
-      clearTimeout(esperaSeek);
-      if (video.seeking || video.readyState < 2) return;
-      if (Math.abs(video.currentTime - alvoAtual) < TOLERANCIA_SEEK) return;
-      const agora = performance.now();
-      const falta = INTERVALO_SEEK - (agora - ultimoSeek);
-      if (falta > 0) {
-        esperaSeek = setTimeout(buscar, falta);
-        return;
-      }
-      ultimoSeek = agora;
-      video.currentTime = alvoAtual;
+    const carregarSequencia = () => {
+      const cfg = S.frames || {};
+      const total = Number(cfg.total) || 6;
+      const modelo = (celular ? cfg.mobile : cfg.desktop) || "";
+      quadros = Array.from({ length: total }, (_, i) => {
+        const src = modelo.replace("{n}", String(i + 1).padStart(2, "0"));
+        const quadro = new Image();
+        quadro.decoding = "async";
+        quadro.src = src;
+        return quadro;
+      });
+      indiceAtual = -1;
+      imagem.src = quadros[0].src;
     };
 
     const aplicar = () => {
       const p = progresso();
       atualizarMomentos(p);
-      const alvo = tempoAlvo(p);
-      if (alvo === null) return;
-      alvoAtual = alvo;
-      buscar();
+      if (!quadros.length) return;
+      const indice = Math.min(quadros.length - 1, Math.round(p * (quadros.length - 1)));
+      if (indice === indiceAtual) return;
+      indiceAtual = indice;
+      const quadro = quadros[indice];
+      const trocar = () => { if (indiceAtual === indice) imagem.src = quadro.src; };
+      if (quadro.complete && quadro.naturalWidth) trocar();
+      else if (quadro.decode) quadro.decode().then(trocar, trocar);
+      else quadro.onload = trocar;
     };
 
     const aoRolar = () => {
@@ -74,10 +63,19 @@
       requestAnimationFrame(() => { agendado = false; aplicar(); });
     };
 
-    video.addEventListener("loadedmetadata", aoRolar);
-    video.addEventListener("seeked", aoRolar);
+    const aoRedimensionar = () => {
+      const agoraCelular = matchMedia("(max-width: 760px)").matches;
+      if (agoraCelular !== celular) {
+        celular = agoraCelular;
+        cine.style.setProperty("--altura", celular ? "320vh" : "420vh");
+        carregarSequencia();
+      }
+      aoRolar();
+    };
+
+    carregarSequencia();
     addEventListener("scroll", aoRolar, { passive: true });
-    addEventListener("resize", aoRolar);
+    addEventListener("resize", aoRedimensionar, { passive: true });
     aplicar();
     if (reduzir) atualizarMomentos(0);
   }
