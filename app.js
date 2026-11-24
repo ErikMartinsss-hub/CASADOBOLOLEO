@@ -49,6 +49,9 @@
     const aplicar = () => {
       const p = progresso();
       atualizarMomentos(p);
+      if (!reduzir) {
+        imagem.style.transform = `translate3d(0, ${(-24 * p).toFixed(1)}px, 0) scale(${(1 + 0.06 * p).toFixed(3)})`;
+      }
       if (!quadros.length) return;
       const indice = Math.min(quadros.length - 1, Math.round(p * (quadros.length - 1)));
       if (indice === indiceAtual) return;
