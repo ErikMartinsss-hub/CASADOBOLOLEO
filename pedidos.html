@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pedidos da loja | Casa do Bolo do Léo Doce Mel</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%82%3C/text%3E%3C/svg%3E">
+<style>
+  :root { --glass:rgba(30,18,15,.82); --line:rgba(255,245,235,.16); --text:#FFF7EE; --muted:rgba(255,247,238,.74); --honey:#F6B45C; --green:#8fd6a0; --red:#ff9d92; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; color:var(--text); font:14px/1.55 "Plus Jakarta Sans",Arial,sans-serif; background:linear-gradient(160deg,#150d0b,#2b1814); }
+  .wrap { width:min(100% - 32px, 1280px); margin-inline:auto; padding:28px 0 70px; }
+  .top { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:24px; }
+  h1 { font:700 clamp(1.6rem,4vw,2.3rem)/1.1 Georgia,serif; margin:0; }
+  .eyebrow { color:var(--honey); font-size:.7rem; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }
+  button, input { font:inherit; }
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:40px; padding:9px 16px; border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--text); cursor:pointer; font-weight:700; font-size:.8rem; }
+  .btn.primary { background:var(--honey); border-color:var(--honey); color:#2b1a17; }
+  .btn.danger { color:var(--red); }
+  .btn:hover { filter:brightness(1.1); }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .login { max-width:380px; margin:10vh auto; padding:28px; border-radius:20px; background:var(--glass); border:1px solid var(--line); }
+  .login h1 { margin-bottom:6px; }
+  .login p { color:var(--muted); font-size:.84rem; }
+  .login input { width:100%; min-height:48px; padding:11px 14px; margin:10px 0; border-radius:12px; border:1px solid var(--line); background:rgba(0,0,0,.32); color:var(--text); }
+  .login .btn { width:100%; }
+  .error { color:var(--red); font-size:.8rem; min-height:20px; }
+  .stats { display:flex; gap:10px; flex-wrap:wrap; margin:18px 0 22px; }
+  .stat { flex:1; min-width:160px; padding:14px 18px; border-radius:16px; background:var(--glass); border:1px solid var(--line); }
+  .stat b { display:block; font:700 1.7rem Georgia,serif; color:var(--honey); }
+  .stat span { font-size:.74rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
+  .columns { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .column { padding:18px; border-radius:20px; background:rgba(10,6,5,.36); border:1px solid var(--line); }
+  .column h2 { margin:0 0 14px; font:700 1.2rem Georgia,serif; display:flex; justify-content:space-between; }
+  .column h2 span { color:var(--honey); font-size:.9rem; }
+  .order { padding:16px; margin-bottom:12px; border-radius:16px; background:var(--glass); border:1px solid var(--line); }
+  .order.is-new { border-color:var(--honey); box-shadow:0 0 0 1px rgba(246,180,92,.25); }
+  .order-head { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+  .order-code { font:700 1.5rem Georgia,serif; color:var(--honey); }
+  .order-time { font-size:.7rem; color:var(--muted); }
+  .badge { display:inline-block; margin:8px 0; padding:4px 10px; border-radius:999px; font-size:.68rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; background:rgba(246,180,92,.14); color:var(--honey); }
+  .badge.pronto { background:rgba(143,214,160,.16); color:var(--green); }
+  .badge.cancelado { background:rgba(255,157,146,.14); color:var(--red); }
+  .customer { font-weight:700; }
+  .customer a { color:var(--honey); text-decoration:none; }
+  .address, .notes { font-size:.78rem; color:var(--muted); margin-top:3px; }
+  .notes { padding:7px 9px; border-radius:8px; background:rgba(0,0,0,.22); }
+  ul.items { margin:10px 0; padding-left:18px; font-size:.8rem; color:var(--muted); }
+  .order-foot { display:flex; justify-content:space-between; align-items:center; gap:10px; padding-top:10px; border-top:1px solid var(--line); }
+  .total { font:700 1.15rem Georgia,serif; color:var(--honey); }
+  .actions { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+  .actions .btn { min-height:34px; padding:6px 11px; font-size:.72rem; }
+  .empty { padding:30px 10px; text-align:center; color:var(--muted); font-size:.82rem; }
+  @media (max-width: 860px) { .columns { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><span class="eyebrow">Área da loja</span><h1>Pedidos</h1></div>
+    <div id="top-actions" hidden>
+      <button class="btn" id="refresh" type="button">Atualizar</button>
+      <button class="btn" id="logout" type="button">Sair</button>
+    </div>
+  </div>
+
+  <section class="login" id="login">
+    <h1>Acesso do operador</h1>
+    <p>Entre com usuário e senha para ver retiradas e deliveries.</p>
+    <input id="username" type="text" autocomplete="username" placeholder="Usuário" aria-label="Usuário" value="admin">
+    <input id="password" type="password" autocomplete="current-password" placeholder="Senha" aria-label="Senha">
+    <button class="btn primary" id="enter" type="button">Entrar</button>
+    <div class="error" id="login-error" role="alert"></div>
+  </section>
+
+  <section id="dashboard" hidden>
+    <div class="stats" id="stats"></div>
+    <div class="columns">
+      <div class="column"><h2>Retirada no balcão <span id="count-balcao"></span></h2><div id="list-balcao"></div></div>
+      <div class="column"><h2>Delivery <span id="count-delivery"></span></h2><div id="list-delivery"></div></div>
+    </div>
+  </section>
+</div>
+<script>
+(function () {
+  "use strict";
+  var passwordEl = document.getElementById("password");
+  var loginError = document.getElementById("login-error");
+  var timer = null;
+
+  function escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function money(cents) { return "R$ " + (Number(cents || 0) / 100).toFixed(2).replace(".", ","); }
+  function phone(value) {
+    var d = String(value || "").replace(/\D/g, "");
+    if (d.length === 11) return "(" + d.slice(0,2) + ") " + d.slice(2,7) + "-" + d.slice(7);
+    if (d.length === 10) return "(" + d.slice(0,2) + ") " + d.slice(2,6) + "-" + d.slice(6);
+    return String(value || "");
+  }
+  function time(value) {
+    var d = new Date(value);
+    return isNaN(d.getTime()) ? "" : d.toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit" });
+  }
+  var statusLabels = { novo:"Novo", em_preparo:"Em preparo", pronto:"Pronto", finalizado:"Finalizado", cancelado:"Cancelado" };
+  var nextStatus = { novo:"em_preparo", em_preparo:"pronto", pronto:"finalizado" };
+  var nextLabel = { em_preparo:"Iniciar preparo", pronto:"Marcar pronto", finalizado:"Finalizar" };
+
+  function showDashboard() {
+    document.getElementById("login").hidden = true;
+    document.getElementById("dashboard").hidden = false;
+    document.getElementById("top-actions").hidden = false;
+    load();
+    if (timer) clearInterval(timer);
+    timer = setInterval(load, 15000);
+  }
+
+  function orderHtml(order) {
+    var active = !["finalizado", "cancelado"].includes(order.status);
+    var next = nextStatus[order.status];
+    var items = order.items.map(function (item) {
+      return "<li>" + item.qty + "x " + escapeHtml(item.name) + "</li>";
+    }).join("");
+    return '<article class="order' + (active ? " is-new" : "") + '" data-id="' + order.id + '">' +
+      '<div class="order-head"><span class="order-code">' + escapeHtml(order.code) + '</span><span class="order-time">' + escapeHtml(time(order.created_at)) + '</span></div>' +
+      '<span class="badge ' + escapeHtml(order.status) + '">' + escapeHtml(statusLabels[order.status] || order.status) + '</span>' +
+      '<div class="customer">' + escapeHtml(order.customer_name) + ' &middot; <a href="tel:' + escapeHtml(order.phone) + '">' + escapeHtml(phone(order.phone)) + '</a></div>' +
+      (order.type === "delivery" ? '<div class="address">Entrega: ' + escapeHtml(order.address) + '</div>' : '') +
+      (order.notes ? '<div class="notes">Obs.: ' + escapeHtml(order.notes) + '</div>' : '') +
+      '<ul class="items">' + items + '</ul>' +
+      '<div class="order-foot"><span class="total">' + money(order.total_cents) + '</span>' +
+        '<div class="actions">' +
+          '<a class="btn" href="comanda.html?codigo=' + encodeURIComponent(order.code) + '&loja=1&imprimir=1" target="_blank" rel="noopener noreferrer">Imprimir</a>' +
+          (next ? '<button class="btn primary" data-status="' + next + '" type="button">' + nextLabel[next] + '</button>' : '') +
+          (active && order.status !== "novo" ? '<button class="btn danger" data-status="cancelado" type="button">Cancelar</button>' : '') +
+        '</div>' +
+      '</div>' +
+    '</article>';
+  }
+
+  function render(orders) {
+    var open = orders.filter(function (o) { return !["finalizado", "cancelado"].includes(o.status); });
+    var balcao = orders.filter(function (o) { return o.type === "balcao" && !["finalizado", "cancelado"].includes(o.status); });
+    var delivery = orders.filter(function (o) { return o.type === "delivery" && !["finalizado", "cancelado"].includes(o.status); });
+    document.getElementById("stats").innerHTML =
+      '<div class="stat"><b>' + open.length + '</b><span>Pedidos abertos</span></div>' +
+      '<div class="stat"><b>' + balcao.length + '</b><span>Para retirar</span></div>' +
+      '<div class="stat"><b>' + delivery.length + '</b><span>Para entregar</span></div>';
+    document.getElementById("count-balcao").textContent = balcao.length;
+    document.getElementById("count-delivery").textContent = delivery.length;
+    [["balcao", balcao], ["delivery", delivery]].forEach(function (pair) {
+      var element = document.getElementById("list-" + pair[0]);
+      element.innerHTML = pair[1].length ? pair[1].map(orderHtml).join("") : '<div class="empty">Nenhum pedido aberto.</div>';
+    });
+  }
+
+  function load() {
+    return fetch("/api/operator/orders", { cache:"no-store" })
+      .then(function (r) {
+        if (r.status === 401) { showLogin(); throw new Error("Sessão expirada."); }
+        return r.json();
+      })
+      .then(function (data) { render(data.orders); })
+      .catch(function () {});
+  }
+
+  function showLogin() {
+    if (timer) { clearInterval(timer); timer = null; }
+    document.getElementById("login").hidden = false;
+    document.getElementById("dashboard").hidden = true;
+    document.getElementById("top-actions").hidden = true;
+  }
+
+  function login() {
+    fetch("/api/operator/login", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json", "X-Requested-With":"CasaDoBolo" },
+      body: JSON.stringify({
+        username: document.getElementById("username").value,
+        password: passwordEl.value
+      })
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok:r.ok, data:d }; }); })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.data.error || "Falha no acesso.");
+        passwordEl.value = "";
+        loginError.textContent = "";
+        showDashboard();
+      })
+      .catch(function (e) { loginError.textContent = e.message; });
+  }
+
+  document.getElementById("enter").addEventListener("click", login);
+  document.getElementById("username").addEventListener("keydown", function (e) { if (e.key === "Enter") login(); });
+  passwordEl.addEventListener("keydown", function (e) { if (e.key === "Enter") login(); });
+  document.getElementById("logout").addEventListener("click", function () {
+    fetch("/api/operator/logout", { method:"POST", headers:{ "X-Requested-With":"CasaDoBolo" } })
+      .then(function () { showLogin(); });
+  });
+  document.getElementById("refresh").addEventListener("click", load);
+  document.getElementById("dashboard").addEventListener("click", function (event) {
+    var button = event.target.closest("button[data-status]");
+    if (!button) return;
+    var id = button.closest(".order").getAttribute("data-id");
+    button.disabled = true;
+    fetch("/api/operator/orders/" + id, {
+      method:"PATCH",
+      headers:{ "Content-Type":"application/json", "X-Requested-With":"CasaDoBolo" },
+      body: JSON.stringify({ status: button.getAttribute("data-status") })
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok:r.ok, data:d }; }); })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.data.error || "Falha ao atualizar.");
+        return load();
+      })
+      .catch(function () { button.disabled = false; });
+  });
+
+  fetch("/api/operator/session", { cache:"no-store" })
+    .then(function (r) { return r.json(); })
+    .then(function (data) { if (data.ok) showDashboard(); })
+    .catch(function () {});
+})();
+</script>
+</body>
+</html>

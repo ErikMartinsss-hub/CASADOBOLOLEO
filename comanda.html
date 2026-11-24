@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comanda | Casa do Bolo do Léo Doce Mel</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%82%3C/text%3E%3C/svg%3E">
+<style>
+  * { box-sizing:border-box; }
+  html { background:#e9e4df; }
+  body { margin:0; padding:18px 12px 40px; font:12px/1.35 "Courier New",Courier,monospace; color:#000; }
+  .toolbar { width:80mm; max-width:100%; margin:0 auto 14px; display:flex; gap:8px; flex-wrap:wrap; }
+  .toolbar button, .toolbar a {
+    border:1px solid #999; background:#fff; color:#111; border-radius:6px;
+    padding:9px 14px; font:700 12px "Courier New",monospace; cursor:pointer; text-decoration:none;
+  }
+  .toolbar button.primary { background:#222; border-color:#222; color:#fff; }
+  .hint { width:80mm; max-width:100%; margin:0 auto 12px; font-size:10px; line-height:1.4; color:#555; }
+  .ticket {
+    width:80mm;
+    max-width:100%;
+    min-height:120mm;
+    margin:0 auto;
+    padding:4mm 3mm 8mm;
+    background:#fff;
+    box-shadow:0 8px 30px rgba(0,0,0,.18);
+    word-break:break-word;
+  }
+  .center { text-align:center; }
+  .brand { font:700 17px/1.1 "Courier New",monospace; letter-spacing:1px; }
+  .sub { font-size:10px; margin-top:2px; }
+  .rule { border:0; border-top:1px dashed #000; margin:8px 0; }
+  .code { font:700 32px/1 "Courier New",monospace; text-align:center; letter-spacing:3px; margin:8px 0 2px; }
+  .code-label { text-align:center; font-size:10px; margin-bottom:8px; }
+  .row { display:flex; justify-content:space-between; gap:6px; }
+  .row + .row { margin-top:2px; }
+  .label { white-space:nowrap; }
+  .value { text-align:right; font-weight:700; }
+  table { width:100%; border-collapse:collapse; table-layout:fixed; }
+  th { text-align:left; font-size:10px; border-bottom:1px solid #000; padding:5px 0 3px; }
+  th.num, td.num { text-align:right; white-space:nowrap; }
+  td { padding:4px 0; border-bottom:1px dotted #999; vertical-align:top; }
+  .total { display:flex; justify-content:space-between; align-items:baseline; font:700 16px "Courier New",monospace; margin-top:9px; padding-top:6px; border-top:2px solid #000; }
+  .notes { margin-top:8px; padding:6px; border:1px dashed #000; font-size:11px; }
+  .foot { margin-top:12px; text-align:center; font-size:10px; line-height:1.5; }
+  .error { max-width:80mm; margin:60px auto; background:#fff; padding:20px; text-align:center; }
+
+  @media print {
+    @page { size:80mm auto; margin:0; }
+    html, body { width:80mm; margin:0; padding:0; background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .toolbar, .hint { display:none !important; }
+    .ticket { width:80mm; min-height:0; margin:0; padding:3mm 3mm 5mm; box-shadow:none; }
+    .notes, .total, th, td { border-color:#000; }
+  }
+</style>
+</head>
+<body>
+  <div class="toolbar">
+    <button class="primary" type="button" id="print" hidden>Imprimir comanda</button>
+    <a href="produtos.html" id="back-customer">Voltar ao cardápio</a>
+    <a href="pedidos.html" id="back-store" hidden>Voltar aos pedidos</a>
+  </div>
+  <p class="hint">Na caixa de impressão: escolha a impressora de bobina, papel 80&nbsp;mm, margens nenhumas, sem cabeçalho/rodapé e escala 100%.</p>
+  <main id="result">Carregando comanda...</main>
+
+<script>
+(function () {
+  "use strict";
+  function escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function money(cents) { return "R$ " + (Number(cents || 0) / 100).toFixed(2).replace(".", ","); }
+  function phone(value) {
+    var d = String(value || "").replace(/\D/g, "");
+    if (d.length === 11) return "(" + d.slice(0,2) + ") " + d.slice(2,7) + "-" + d.slice(7);
+    if (d.length === 10) return "(" + d.slice(0,2) + ") " + d.slice(2,6) + "-" + d.slice(6);
+    return String(value || "");
+  }
+  function date(value) {
+    var d = new Date(value);
+    return isNaN(d.getTime()) ? String(value || "") : d.toLocaleString("pt-BR");
+  }
+  function statusLabel(status) {
+    return { novo:"NOVO", em_preparo:"EM PREPARO", pronto:"PRONTO", finalizado:"FINALIZADO", cancelado:"CANCELADO" }[status] || String(status || "").toUpperCase();
+  }
+
+  function render(order, store) {
+    var delivery = order.type === "delivery";
+    var rows = order.items.map(function (item) {
+      return "<tr><td>" + escapeHtml(item.name) + "</td>" +
+        '<td class="num">' + item.qty + "x</td>" +
+        '<td class="num">' + money(item.unit_cents * item.qty) + "</td></tr>";
+    }).join("");
+    document.getElementById("result").innerHTML =
+      '<article class="ticket">' +
+        '<div class="center brand">CASA DO BOLO</div>' +
+        '<div class="center sub">LEO DOCE MEL - SUZANO/SP</div>' +
+        '<hr class="rule">' +
+        '<div class="code">' + escapeHtml(order.code) + '</div>' +
+        '<div class="code-label">PEDIDO</div>' +
+        '<hr class="rule">' +
+        (store ?
+          '<div class="row"><span class="label">TIPO</span><span class="value">' + (delivery ? "DELIVERY" : "RETIRADA BALCAO") + '</span></div>' +
+          '<div class="row"><span class="label">STATUS</span><span class="value">' + escapeHtml(statusLabel(order.status)) + '</span></div>' +
+          '<div class="row"><span class="label">HORA</span><span class="value">' + escapeHtml(date(order.created_at)) + '</span></div>' +
+          '<div class="row"><span class="label">CLIENTE</span><span class="value">' + escapeHtml(order.customer_name) + '</span></div>' +
+          '<div class="row"><span class="label">FONE</span><span class="value">' + escapeHtml(phone(order.phone)) + '</span></div>' +
+          (delivery ? '<div class="row"><span class="label">ENTREGA</span><span class="value">' + escapeHtml(order.address) + '</span></div>' : '') +
+          '<hr class="rule">'
+        :
+          '<div class="row"><span class="label">HORA</span><span class="value">' + escapeHtml(date(order.created_at)) + '</span></div>' +
+          '<div class="row"><span class="label">RETIRADA</span><span class="value">' + (delivery ? "DELIVERY" : "BALCAO") + '</span></div>' +
+          '<hr class="rule">') +
+        '<table><thead><tr><th>ITEM</th><th class="num">QTD</th><th class="num">VALOR</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+        '<div class="total"><span>TOTAL</span><span>' + money(order.total_cents) + '</span></div>' +
+        (store && order.notes ? '<div class="notes">OBS: ' + escapeHtml(order.notes) + '</div>' : '') +
+        '<hr class="rule">' +
+        '<div class="foot">' + (store ? (delivery ? 'AGUARDE O MOTOBOY' : 'RETIRAR NO BALCAO') : 'GUARDE ESTE COMPROVANTE') + '<br>Obrigado! Volte sempre.</div>' +
+      '</article>';
+  }
+
+  function showError(message, store) {
+    document.getElementById("result").innerHTML = '<div class="error">' + escapeHtml(message) +
+      (store ? ' <a href="pedidos.html">Entrar na loja</a>' : '') + '</div>';
+  }
+
+  var params = new URLSearchParams(location.search);
+  var code = params.get("codigo") || "";
+  var tel = (params.get("tel") || "").replace(/\D/g, "");
+  var store = params.get("loja") === "1";
+  var autoPrint = params.get("imprimir") === "1";
+
+  document.getElementById("print").hidden = !store;
+  document.getElementById("back-customer").hidden = store;
+  document.getElementById("back-store").hidden = !store;
+
+  var url = "/api/orders/" + encodeURIComponent(code) + (store ? "?loja=1" : (tel ? "?phone=" + encodeURIComponent(tel) : ""));
+  fetch(url, { cache:"no-store" })
+    .then(function (r) { return r.json().then(function (d) { return { ok:r.ok, data:d, status:r.status }; }); })
+    .then(function (result) {
+      if (!result.ok) {
+        var message = result.status === 403 ? "Acesso restrito à loja." : (result.data.error || "Comanda não encontrada.");
+        showError(message, store);
+        return;
+      }
+      render(result.data.order, store);
+      if (autoPrint && store) window.print();
+    })
+    .catch(function (error) { showError(error.message, store); });
+
+  document.getElementById("print").addEventListener("click", function () { window.print(); });
+})();
+</script>
+</body>
+</html>

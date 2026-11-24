@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Acompanhar pedido | Casa do Bolo do Léo Doce Mel</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%82%3C/text%3E%3C/svg%3E">
+<style>
+  :root { --glass:rgba(30,18,15,.76); --line:rgba(255,245,235,.16); --text:#FFF7EE; --muted:rgba(255,247,238,.75); --honey:#F6B45C; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; color:var(--text); font:15px/1.6 "Plus Jakarta Sans",Arial,sans-serif; background:linear-gradient(180deg,#1a100e,#251612); }
+  .wrap { width:min(100% - 32px, 620px); margin-inline:auto; padding:40px 0 70px; }
+  h1 { font:700 clamp(1.8rem,5vw,2.6rem)/1.1 Georgia,serif; margin:8px 0; }
+  .eyebrow { color:var(--honey); font-size:.72rem; font-weight:800; letter-spacing:.18em; text-transform:uppercase; }
+  p.lead { color:var(--muted); margin:0 0 26px; }
+  .card { padding:24px; border-radius:20px; background:var(--glass); border:1px solid var(--line); }
+  label { display:block; font-size:.76rem; font-weight:700; color:var(--muted); margin:0 0 6px; }
+  input { width:100%; min-height:48px; padding:11px 14px; margin-bottom:14px; border-radius:12px; border:1px solid var(--line); background:rgba(0,0,0,.3); color:var(--text); outline:none; }
+  input:focus { border-color:var(--honey); }
+  button, .btn { display:inline-flex; align-items:center; justify-content:center; min-height:46px; padding:10px 20px; border-radius:999px; border:0; background:var(--honey); color:#2b1a17; font-weight:700; cursor:pointer; text-decoration:none; }
+  .error { color:#ffb3a7; min-height:22px; font-size:.82rem; margin-top:8px; }
+  .status { display:inline-block; padding:6px 14px; border-radius:999px; background:rgba(246,180,92,.16); color:var(--honey); font-weight:800; font-size:.78rem; }
+  .code { font:700 2.6rem/1 Georgia,serif; color:var(--honey); margin:12px 0 4px; }
+  .meta { margin:18px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:12px 0; color:var(--muted); font-size:.86rem; }
+  .steps { display:grid; gap:8px; margin:18px 0; }
+  .step { display:flex; gap:10px; align-items:center; color:var(--muted); font-size:.86rem; }
+  .step i { width:12px; height:12px; border-radius:50%; border:2px solid var(--line); flex:none; }
+  .step.done { color:var(--text); }
+  .step.done i { background:var(--honey); border-color:var(--honey); }
+  ul { padding-left:18px; color:var(--muted); font-size:.86rem; }
+  .links { display:flex; gap:8px; flex-wrap:wrap; margin-top:20px; }
+  .links a { min-height:40px; font-size:.8rem; }
+  .links a.outline { background:transparent; color:var(--text); border:1px solid var(--line); }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <span class="eyebrow">Casa do Bolo do Léo Doce Mel</span>
+  <h1>Acompanhe seu pedido</h1>
+  <p class="lead">Informe o número do pedido e o telefone usados no pedido.</p>
+
+  <section class="card">
+    <form id="track-form">
+      <label for="code">Número do pedido</label>
+      <input id="code" inputmode="numeric" maxlength="6" placeholder="#0001" required>
+      <label for="phone">Telefone</label>
+      <input id="phone" inputmode="tel" maxlength="15" autocomplete="tel" placeholder="(11) 96246-3805" required>
+      <button type="submit">Buscar pedido</button>
+    </form>
+    <div id="error" class="error" role="alert"></div>
+    <div id="result" hidden></div>
+  </section>
+</main>
+<script>
+(function () {
+  "use strict";
+  var params = new URLSearchParams(location.search);
+  document.getElementById("code").value = params.get("codigo") || "";
+  document.getElementById("phone").value = params.get("tel") || "";
+
+  function escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function money(cents) { return "R$ " + (Number(cents || 0) / 100).toFixed(2).replace(".", ","); }
+  var labels = { novo:"Recebido", em_preparo:"Em preparo", pronto:"Pronto", finalizado:"Finalizado", cancelado:"Cancelado" };
+  var steps = ["novo", "em_preparo", "pronto", "finalizado"];
+  var timer = null;
+
+  function render(order) {
+    var index = steps.indexOf(order.status);
+    var stepHtml = steps.map(function (step, position) {
+      return '<div class="step' + (index >= position && order.status !== "cancelado" ? " done" : "") + '"><i></i>' + labels[step] + '</div>';
+    }).join("");
+    var items = order.items.map(function (item) {
+      return "<li>" + item.qty + "x " + escapeHtml(item.name) + "</li>";
+    }).join("");
+    var query = "codigo=" + encodeURIComponent(order.code) + "&tel=" + encodeURIComponent(document.getElementById("phone").value.replace(/\D/g, ""));
+    document.getElementById("result").innerHTML =
+      '<span class="status">' + escapeHtml(labels[order.status] || order.status) + '</span>' +
+      '<div class="code">' + escapeHtml(order.code) + '</div>' +
+      '<div class="meta">' +
+        (order.type === "delivery" ? "Delivery &middot; entrega pelo motoboy" : "Retirada no balcão") +
+        ' &middot; ' + escapeHtml(new Date(order.created_at).toLocaleString("pt-BR")) +
+      '</div>' +
+      '<div class="steps">' + stepHtml + '</div>' +
+      '<ul>' + items + '</ul>' +
+      '<p><b>Total: ' + money(order.total_cents) + '</b></p>' +
+      '<div class="links">' +
+        '<a class="btn" href="comanda.html?' + query + '" target="_blank" rel="noopener noreferrer">Ver comanda</a>' +
+        '<a class="btn outline" href="produtos.html">Voltar ao cardápio</a>' +
+      '</div>';
+    document.getElementById("result").hidden = false;
+  }
+
+  function load() {
+    var code = document.getElementById("code").value.trim();
+    var phone = document.getElementById("phone").value.replace(/\D/g, "");
+    var error = document.getElementById("error");
+    error.textContent = "";
+    if (!code || phone.length < 10) { error.textContent = "Preencha número do pedido e telefone."; return; }
+    return fetch("/api/orders/" + encodeURIComponent(code) + "?phone=" + encodeURIComponent(phone), { cache:"no-store" })
+      .then(function (r) { return r.json().then(function (d) { return { ok:r.ok, data:d }; }); })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.data.error || "Pedido não encontrado.");
+        render(result.data.order);
+      })
+      .catch(function (e) {
+        error.textContent = e.message;
+        document.getElementById("result").hidden = true;
+        if (timer) { clearInterval(timer); timer = null; }
+      });
+  }
+
+  document.getElementById("track-form").addEventListener("submit", function (event) {
+    event.preventDefault();
+    if (timer) { clearInterval(timer); timer = null; }
+    load().then(function () {
+      timer = setInterval(load, 20000);
+    });
+  });
+  if (params.get("codigo") && params.get("tel")) {
+    load().then(function () { timer = setInterval(load, 20000); });
+  }
+})();
+</script>
+</body>
+</html>
