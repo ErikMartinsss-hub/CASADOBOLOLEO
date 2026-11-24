@@ -232,6 +232,15 @@ p { margin: 0 0 1em; color: var(--texto-suave); text-wrap: pretty; }
 /* ── Rodapé ────────────────────────────────────────────────────────────── */
 .rodape { padding: 0 var(--gutter) 40px; }
 .rodape-painel { max-width: var(--largura); margin: 0 auto; display: flex; flex-wrap: wrap; gap: 12px 32px; align-items: center; justify-content: space-between; font-size: 14px; color: var(--texto-suave); padding: 24px 32px; }
+.rodape a { color: var(--texto-suave); text-decoration: none; border-bottom: 1px solid var(--acento); }
+.rodape a:hover, .rodape a:focus-visible { color: var(--acento); }
+.rodape-bloco { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; }
+.rodape-legal { max-width: 720px; }
+.rodape-credito { display: inline-flex; align-items: center; gap: 8px; }
+.rodape a.rodape-ig { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; color: var(--acento); border-bottom: 0; }
+.rodape a.rodape-ig svg { width: 20px; height: 20px; }
+.rodape a.rodape-ig:hover, .rodape a.rodape-ig:focus-visible { color: var(--texto); }
+.rodape a.rodape-ig:focus-visible { outline: 2px solid var(--acento); outline-offset: 3px; border-radius: 5px; }
 
 /* ── Revelar ao rolar ──────────────────────────────────────────────────── */
 .revelar { opacity: 0; transform: translateY(40px); transition: opacity 1s var(--ease), transform 1.2s var(--ease); }
